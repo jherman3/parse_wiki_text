@@ -23,6 +23,7 @@ pub const TEST_CASES: &[(&str, &[&str])] = &[
             " \n\nalpha",
             " \nalpha",
             "  ",
+            "!!",
             "alpha",
             "alpha\t",
             "alpha\n",

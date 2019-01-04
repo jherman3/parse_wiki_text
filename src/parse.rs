@@ -73,7 +73,16 @@ pub fn parse<'a>(configuration: &::Configuration, wiki_text: &'a str) -> ::Outpu
             Some(b'\n') => {
                 ::line::parse_end_of_line(&mut state);
             }
-            Some(b'!') if state.get_byte(state.scan_position + 1) == Some(b'!') => {
+            Some(b'!')
+                if state.get_byte(state.scan_position + 1) == Some(b'!')
+                    && match state.stack.last() {
+                        Some(::OpenNode {
+                            type_: ::OpenNodeType::Table(..),
+                            ..
+                        }) => true,
+                        _ => false,
+                    } =>
+            {
                 ::table::parse_heading_cell(&mut state);
             }
             Some(b'&') => ::character_entity::parse_character_entity(&mut state, configuration),
