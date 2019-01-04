@@ -229,15 +229,18 @@ fn parse_plain_text_tag<'a>(
                 });
                 break;
             }
-            Some(b'<') => if state.get_byte(state.scan_position + 1) == Some(b'/')
-                && parse_plain_text_end_tag(
-                    state,
-                    position_before_start_tag,
-                    position_after_start_tag,
-                    &start_tag_name,
-                ) {
-                break;
-            },
+            Some(b'<') => {
+                if state.get_byte(state.scan_position + 1) == Some(b'/')
+                    && parse_plain_text_end_tag(
+                        state,
+                        position_before_start_tag,
+                        position_after_start_tag,
+                        &start_tag_name,
+                    )
+                {
+                    break;
+                }
+            }
             _ => {}
         }
         state.scan_position += 1;

@@ -445,7 +445,8 @@ pub fn parse_inline_token(state: &mut ::State) {
         .wiki_text
         .as_bytes()
         .get(position_before_token + 1)
-        .cloned() == Some(b'|')
+        .cloned()
+        == Some(b'|')
     {
         match table.state {
             ::state::TableState::CaptionFirstLine => {
@@ -551,7 +552,8 @@ pub fn parse_inline_token(state: &mut ::State) {
         match table.state {
             ::state::TableState::CaptionFirstLine
             | ::state::TableState::CellFirstLine
-            | ::state::TableState::HeadingFirstLine if table.child_element_attributes.is_none() =>
+            | ::state::TableState::HeadingFirstLine
+                if table.child_element_attributes.is_none() =>
             {
                 ::state::flush(
                     &mut state.nodes,

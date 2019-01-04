@@ -120,15 +120,17 @@ pub fn parse_beginning_of_line(state: &mut ::State, line_start_position: Option<
     }
     match line_start_position {
         None => state.flushed_position = state.scan_position,
-        Some(position) => if has_line_break {
-            let flush_position = state.skip_whitespace_backwards(position);
-            state.flush(flush_position);
-            state.nodes.push(::Node::ParagraphBreak {
-                end: state.scan_position,
-                start: position,
-            });
-            state.flushed_position = state.scan_position;
-        },
+        Some(position) => {
+            if has_line_break {
+                let flush_position = state.skip_whitespace_backwards(position);
+                state.flush(flush_position);
+                state.nodes.push(::Node::ParagraphBreak {
+                    end: state.scan_position,
+                    start: position,
+                });
+                state.flushed_position = state.scan_position;
+            }
+        }
     }
 }
 
@@ -209,7 +211,8 @@ fn parse_preformatted_end_of_line(state: &mut ::State) {
                     break;
                 }
                 Some(b'|')
-                    if state.get_byte(position + 1) == Some(b'}') && state.stack.len() > 1
+                    if state.get_byte(position + 1) == Some(b'}')
+                        && state.stack.len() > 1
                         && match state.stack.get(state.stack.len() - 2) {
                             Some(::OpenNode {
                                 type_: ::OpenNodeType::Table { .. },

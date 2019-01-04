@@ -133,7 +133,8 @@ pub use configuration::ConfigurationSource;
 use configuration::Namespace;
 use state::{OpenNode, OpenNodeType, State};
 use std::{
-    borrow::Cow, collections::{HashMap, HashSet},
+    borrow::Cow,
+    collections::{HashMap, HashSet},
 };
 use trie::Trie;
 pub use warning::{Warning, WarningMessage};

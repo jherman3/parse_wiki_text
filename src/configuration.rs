@@ -139,7 +139,8 @@ impl ::Configuration {
             "ul",
             "var",
             "wbr",
-        ].iter()
+        ]
+        .iter()
         {
             configuration
                 .tag_name_map

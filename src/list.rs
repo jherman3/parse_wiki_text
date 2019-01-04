@@ -37,10 +37,12 @@ pub fn parse_list_end_of_line(state: &mut ::State) {
         }
     }
     if let Some(term_level) = term_level {
-        if level < state.stack.len() || match state.get_byte(state.scan_position) {
-            Some(b'#') | Some(b'*') | Some(b':') | Some(b';') => true,
-            _ => false,
-        } {
+        if level < state.stack.len()
+            || match state.get_byte(state.scan_position) {
+                Some(b'#') | Some(b'*') | Some(b':') | Some(b';') => true,
+                _ => false,
+            }
+        {
             state.scan_position -= level - term_level;
             level = term_level;
             state.warnings.push(::Warning {
@@ -120,7 +122,8 @@ pub fn parse_list_end_of_line(state: &mut ::State) {
                         .wiki_text
                         .as_bytes()
                         .get(state.scan_position - 1)
-                        .cloned() == Some(b';')
+                        .cloned()
+                        == Some(b';')
                     {
                         ::DefinitionListItemType::Term
                     } else {

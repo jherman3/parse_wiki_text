@@ -77,38 +77,40 @@ pub fn parse_template_end(state: &mut ::State) {
             nodes,
             start,
             type_: ::OpenNodeType::Parameter { default, name },
-        }) => if state.get_byte(state.scan_position + 2) == Some(b'}') {
-            if let Some(name) = name {
-                let start_position = state.scan_position;
-                state.flush(start_position);
-                let nodes = ::std::mem::replace(&mut state.nodes, nodes);
-                state.nodes.push(::Node::Parameter {
-                    default: Some(default.unwrap_or(nodes)),
-                    end: state.scan_position,
-                    name,
-                    start,
-                });
+        }) => {
+            if state.get_byte(state.scan_position + 2) == Some(b'}') {
+                if let Some(name) = name {
+                    let start_position = state.scan_position;
+                    state.flush(start_position);
+                    let nodes = ::std::mem::replace(&mut state.nodes, nodes);
+                    state.nodes.push(::Node::Parameter {
+                        default: Some(default.unwrap_or(nodes)),
+                        end: state.scan_position,
+                        name,
+                        start,
+                    });
+                } else {
+                    let start_position = state.skip_whitespace_backwards(state.scan_position);
+                    state.flush(start_position);
+                    let nodes = ::std::mem::replace(&mut state.nodes, nodes);
+                    state.nodes.push(::Node::Parameter {
+                        default: None,
+                        end: state.scan_position,
+                        name: nodes,
+                        start,
+                    });
+                }
+                state.scan_position += 3;
+                state.flushed_position = state.scan_position;
             } else {
-                let start_position = state.skip_whitespace_backwards(state.scan_position);
-                state.flush(start_position);
-                let nodes = ::std::mem::replace(&mut state.nodes, nodes);
-                state.nodes.push(::Node::Parameter {
-                    default: None,
-                    end: state.scan_position,
-                    name: nodes,
-                    start,
+                state.warnings.push(::Warning {
+                    end: state.scan_position + 2,
+                    message: ::WarningMessage::UnexpectedEndTagRewinding,
+                    start: state.scan_position,
                 });
+                state.rewind(nodes, start);
             }
-            state.scan_position += 3;
-            state.flushed_position = state.scan_position;
-        } else {
-            state.warnings.push(::Warning {
-                end: state.scan_position + 2,
-                message: ::WarningMessage::UnexpectedEndTagRewinding,
-                start: state.scan_position,
-            });
-            state.rewind(nodes, start);
-        },
+        }
         Some(::OpenNode {
             nodes,
             start,

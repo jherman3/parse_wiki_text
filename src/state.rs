@@ -152,10 +152,12 @@ pub fn flush<'a>(
 }
 
 pub fn skip_whitespace_backwards(wiki_text: &str, mut position: usize) -> usize {
-    while position > 0 && match wiki_text.as_bytes()[position - 1] {
-        b'\t' | b'\n' | b' ' => true,
-        _ => false,
-    } {
+    while position > 0
+        && match wiki_text.as_bytes()[position - 1] {
+            b'\t' | b'\n' | b' ' => true,
+            _ => false,
+        }
+    {
         position -= 1;
     }
     position
