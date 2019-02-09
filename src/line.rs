@@ -91,6 +91,7 @@ pub fn parse_beginning_of_line(state: &mut crate::State, line_start_position: Op
                             b'\n' => {
                                 state.scan_position += 1;
                                 state.skip_empty_lines();
+                                break;
                             }
                             _ => break,
                         }

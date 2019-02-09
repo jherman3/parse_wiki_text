@@ -321,6 +321,7 @@ fn parse_end(
                     b'\n' => {
                         state.scan_position += 1;
                         state.skip_empty_lines();
+                        break;
                     }
                     _ => break,
                 }
