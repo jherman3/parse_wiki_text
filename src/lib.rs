@@ -146,10 +146,10 @@ pub struct Configuration {
     character_entities: Trie<char>,
     link_trail_character_set: HashSet<char>,
     magic_words: Trie<()>,
-    namespaces: Trie<::Namespace>,
+    namespaces: Trie<Namespace>,
     protocols: Trie<()>,
     redirect_magic_words: Trie<()>,
-    tag_name_map: HashMap<String, ::TagClass>,
+    tag_name_map: HashMap<String, TagClass>,
 }
 
 /// List item of a definition list.
