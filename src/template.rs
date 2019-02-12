@@ -74,90 +74,116 @@ pub fn parse_parameter_separator(state: &mut crate::State) {
 }
 
 pub fn parse_template_end(state: &mut crate::State) {
-    match state.stack.pop() {
+    match state.stack.last() {
         Some(crate::OpenNode {
-            nodes,
-            start,
-            type_: crate::OpenNodeType::Parameter { default, name },
-        }) => {
-            if state.get_byte(state.scan_position + 2) == Some(b'}') {
-                if let Some(name) = name {
-                    let start_position = state.scan_position;
-                    state.flush(start_position);
-                    let nodes = std::mem::replace(&mut state.nodes, nodes);
-                    state.nodes.push(crate::Node::Parameter {
-                        default: Some(default.unwrap_or(nodes)),
-                        end: state.scan_position,
-                        name,
-                        start,
-                    });
+            type_: crate::OpenNodeType::Parameter { .. },
+            ..
+        }) => match state.stack.pop() {
+            Some(crate::OpenNode {
+                nodes,
+                start,
+                type_: crate::OpenNodeType::Parameter { default, name },
+            }) => {
+                if state.get_byte(state.scan_position + 2) == Some(b'}') {
+                    if let Some(name) = name {
+                        let start_position = state.scan_position;
+                        state.flush(start_position);
+                        let nodes = std::mem::replace(&mut state.nodes, nodes);
+                        state.nodes.push(crate::Node::Parameter {
+                            default: Some(default.unwrap_or(nodes)),
+                            end: state.scan_position,
+                            name,
+                            start,
+                        });
+                    } else {
+                        let start_position = state.skip_whitespace_backwards(state.scan_position);
+                        state.flush(start_position);
+                        let nodes = std::mem::replace(&mut state.nodes, nodes);
+                        state.nodes.push(crate::Node::Parameter {
+                            default: None,
+                            end: state.scan_position,
+                            name: nodes,
+                            start,
+                        });
+                    }
+                    state.scan_position += 3;
+                    state.flushed_position = state.scan_position;
                 } else {
-                    let start_position = state.skip_whitespace_backwards(state.scan_position);
-                    state.flush(start_position);
-                    let nodes = std::mem::replace(&mut state.nodes, nodes);
-                    state.nodes.push(crate::Node::Parameter {
-                        default: None,
-                        end: state.scan_position,
-                        name: nodes,
-                        start,
+                    state.warnings.push(crate::Warning {
+                        end: state.scan_position + 2,
+                        message: crate::WarningMessage::UnexpectedEndTagRewinding,
+                        start: state.scan_position,
                     });
+                    state.rewind(nodes, start);
                 }
-                state.scan_position += 3;
+            }
+            _ => unreachable!(),
+        },
+        Some(crate::OpenNode {
+            type_: crate::OpenNodeType::Template { .. },
+            ..
+        }) => match state.stack.pop() {
+            Some(crate::OpenNode {
+                nodes,
+                start,
+                type_:
+                    crate::OpenNodeType::Template {
+                        name,
+                        mut parameters,
+                    },
+            }) => {
+                let position = state.skip_whitespace_backwards(state.scan_position);
+                state.flush(position);
+                state.scan_position += 2;
                 state.flushed_position = state.scan_position;
-            } else {
+                let name = match name {
+                    None => std::mem::replace(&mut state.nodes, nodes),
+                    Some(name) => {
+                        let parameters_length = parameters.len();
+                        let parameter = &mut parameters[parameters_length - 1];
+                        parameter.end = position;
+                        parameter.value = std::mem::replace(&mut state.nodes, nodes);
+                        name
+                    }
+                };
+                state.nodes.push(crate::Node::Template {
+                    end: state.scan_position,
+                    name,
+                    parameters,
+                    start,
+                });
+            }
+            _ => unreachable!(),
+        },
+        _ => {
+            if state
+                .stack
+                .iter()
+                .rev()
+                .skip(1)
+                .any(|item| match item.type_ {
+                    crate::OpenNodeType::Parameter { .. } => {
+                        state.get_byte(state.scan_position + 2) == Some(b'}')
+                    }
+                    crate::OpenNodeType::Template { .. } => true,
+                    _ => false,
+                })
+            {
                 state.warnings.push(crate::Warning {
                     end: state.scan_position + 2,
                     message: crate::WarningMessage::UnexpectedEndTagRewinding,
                     start: state.scan_position,
                 });
-                state.rewind(nodes, start);
+                let open_node = state.stack.pop().unwrap();
+                state.rewind(open_node.nodes, open_node.start);
+            } else {
+                state.warnings.push(crate::Warning {
+                    end: state.scan_position + 2,
+                    message: crate::WarningMessage::UnexpectedEndTag,
+                    start: state.scan_position,
+                });
+                state.scan_position += 2;
             }
-        }
-        Some(crate::OpenNode {
-            nodes,
-            start,
-            type_:
-                crate::OpenNodeType::Template {
-                    name,
-                    mut parameters,
-                },
-        }) => {
-            let position = state.skip_whitespace_backwards(state.scan_position);
-            state.flush(position);
-            state.scan_position += 2;
-            state.flushed_position = state.scan_position;
-            let name = match name {
-                None => std::mem::replace(&mut state.nodes, nodes),
-                Some(name) => {
-                    let parameters_length = parameters.len();
-                    let parameter = &mut parameters[parameters_length - 1];
-                    parameter.end = position;
-                    parameter.value = std::mem::replace(&mut state.nodes, nodes);
-                    name
-                }
-            };
-            state.nodes.push(crate::Node::Template {
-                end: state.scan_position,
-                name,
-                parameters,
-                start,
-            });
-        }
-        Some(crate::OpenNode { nodes, start, .. }) => {
-            state.warnings.push(crate::Warning {
-                end: state.scan_position + 2,
-                message: crate::WarningMessage::UnexpectedEndTagRewinding,
-                start: state.scan_position,
-            });
-            state.rewind(nodes, start);
-        }
-        _ => {
-            state.warnings.push(crate::Warning {
-                end: state.scan_position + 2,
-                message: crate::WarningMessage::UnexpectedEndTag,
-                start: state.scan_position,
-            });
-            state.scan_position += 2;
         }
     }
 }

@@ -403,10 +403,13 @@ pub const TEST_CASES: &[(&str, &[&str])] = &[
     (
         "parameter",
         &[
+            "*alpha}}}",
+            "[[alpha|beta}}}]]",
             "{{{",
             "{{{\talpha}}}",
             "{{{\nalpha}}}",
             "{{{''}}}",
+            "{{{[[alpha|beta}}}",
             "{{{alpha\t|beta}}}",
             "{{{alpha\t}}}",
             "{{{alpha\n|beta}}}",
@@ -673,12 +676,15 @@ pub const TEST_CASES: &[(&str, &[&str])] = &[
     (
         "template",
         &[
+            "*alpha}}",
+            "[[alpha|beta}}]]",
             "alpha {{beta}}",
             "alpha {{beta}} gamma",
             "alpha{{beta}}",
             "alpha{{beta}}gamma",
             "{{\nalpha}}",
             "{{''}}",
+            "{{[[alpha|beta}}",
             "{{alpha",
             "{{alpha\n|beta}}",
             "{{alpha\n|}}",
