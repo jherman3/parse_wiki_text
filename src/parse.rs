@@ -3,7 +3,7 @@
 // the file LICENSE at the top-level directory of this distribution.
 
 #[must_use]
-pub fn parse<'a>(configuration: &crate::Configuration, wiki_text: &'a str) -> crate::Output<'a> {
+pub fn parse<'a>(configuration: &crate::Configuration, wiki_text: &'a str, max_steps: u64) -> (crate::Output<'a>, bool) {
     let mut state = crate::State {
         flushed_position: 0,
         nodes: vec![],
@@ -12,10 +12,19 @@ pub fn parse<'a>(configuration: &crate::Configuration, wiki_text: &'a str) -> cr
         warnings: vec![],
         wiki_text,
     };
+    let mut steps = 0;
     {
         let mut has_line_break = false;
         let mut position = 0;
         loop {
+            steps += 1;
+            if steps > max_steps {
+                // Timeout
+                return (crate::Output {
+                    nodes: state.nodes,
+                    warnings: state.warnings,
+                }, true);
+            }
             match state.get_byte(position) {
                 Some(b'\n') => {
                     if has_line_break {
@@ -41,6 +50,14 @@ pub fn parse<'a>(configuration: &crate::Configuration, wiki_text: &'a str) -> cr
     }
     crate::line::parse_beginning_of_line(&mut state, None);
     loop {
+        steps += 1;
+        if steps > max_steps {
+            // Timeout
+            return (crate::Output {
+                nodes: state.nodes,
+                warnings: state.warnings,
+            }, true);
+        }
         match state.get_byte(state.scan_position) {
             None => {
                 crate::line::parse_end_of_line(&mut state);
@@ -201,8 +218,8 @@ pub fn parse<'a>(configuration: &crate::Configuration, wiki_text: &'a str) -> cr
     }
     let end_position = state.skip_whitespace_backwards(wiki_text.len());
     state.flush(end_position);
-    crate::Output {
+    (crate::Output {
         nodes: state.nodes,
         warnings: state.warnings,
-    }
+    }, false)
 }
